@@ -1,0 +1,30 @@
+# --- Sensitive data (never commit) ---
+TestData/
+Test/
+ground_truth/
+_extracted/
+zzztest/
+*.xlsx
+*.rds
+
+# --- Build artifacts / archives ---
+*.tar.gz
+*.egg-info/
+build/
+dist/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# --- Results: keep figures only, drop data-like outputs ---
+results/*
+!results/
+!results/*.png
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db

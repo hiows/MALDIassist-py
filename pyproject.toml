@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "maldiassist"
+version = "0.1.0"
+description = "Mathematical utilities for MALDI-TOF mass spectrometry (Python port of the MALDIassist R package)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Wonseok Oh" }]
+dependencies = [
+    "numpy>=1.23",
+    "scipy>=1.9",
+    "pandas>=1.5",
+]
+
+[project.optional-dependencies]
+viz = ["matplotlib>=3.6"]
+test = ["pytest>=7"]
+
+[tool.setuptools.packages.find]
+include = ["maldiassist*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
