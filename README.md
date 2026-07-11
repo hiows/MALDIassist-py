@@ -29,7 +29,7 @@ pip install -e ".[viz,test]"  # visualization + test tooling
 | Loading | `load_maldi_spectra` | `load_maldi_spectra` |
 | Preprocessing | `preprocess_maldi_spectra` | `preprocess_maldi_spectra` |
 | Peak detection | `find_peaks` / `find_peaks_spectra` | `find_peaks` / `find_peaks_spectra` |
-| Peak filtering | `filter_peaks` | `filter_peaks` / `filter_peaks_spectra` |
+| Peak filtering | `filter_peaks` / `filter_peaks_spectra` | `filter_peaks` / `filter_peaks_spectra` |
 | Alignment | `align_spectra` | `align_spectra` |
 | Frequent m/z | `find_frequent_mz` | `find_frequent_mz` |
 | Matched matrix | `build_matched_matrix` | `build_matched_matrix` |
