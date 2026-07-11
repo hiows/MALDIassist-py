@@ -16,7 +16,22 @@ TestData set (NC1–NC10).
 
 Requires Python 3.9+.
 
+Install directly from GitHub (the Python equivalent of R's
+`remotes::install_github("hiows/MALDIassist")`):
+
 ```bash
+# core only (numpy, scipy, pandas)
+pip install "git+https://github.com/hiows/MALDIassist-py.git"
+
+# with visualization (matplotlib) -- needed for plots/heatmaps
+pip install "maldiassist[viz] @ git+https://github.com/hiows/MALDIassist-py.git"
+```
+
+For development (clone first, then editable install):
+
+```bash
+git clone https://github.com/hiows/MALDIassist-py.git
+cd MALDIassist-py
 pip install -e .              # core (numpy, scipy, pandas)
 pip install -e ".[viz]"       # with visualization (matplotlib)
 pip install -e ".[viz,test]"  # visualization + test tooling
