@@ -1,6 +1,6 @@
 # maldiassist (Python)
 
-> Python package **v0.2.0** · Original R package: [hiows/MALDIassist](https://github.com/hiows/MALDIassist) (v0.1.3)
+> Python package **v0.2.1** · Original R package: [hiows/MALDIassist](https://github.com/hiows/MALDIassist) (v0.1.3)
 
 A pure-Python port of the `MALDIassist` R package (0.1.3, R + Rcpp/C++) that reproduces
 the **same algorithms and numerical results**. It provides the same five-step workflow as
