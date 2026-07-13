@@ -57,6 +57,9 @@ test-command = "pytest {project}/tests -q"
 [tool.cibuildwheel.macos]
 # Build universal2 wheels (x86_64 + arm64) on macOS.
 archs = ["universal2"]
+# nanobind uses C++17 aligned new/delete, which requires macOS 10.13+; raise the
+# deployment target above cibuildwheel's default (10.9) to avoid a build error.
+environment = { MACOSX_DEPLOYMENT_TARGET = "10.14" }
 
 [tool.cibuildwheel.linux]
 archs = ["x86_64"]
