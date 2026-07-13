@@ -146,7 +146,10 @@ print(sig.head())
 sample = list(pp)[0]  # first sample name
 ax = ma.visualize_spectrum(pp[sample], peaks=fpeaks[sample], annotate_topN=True, topN=5)
 ax = ma.visualize_spectra(pp, interest_range=(13000, 20000))
-ax = ma.heatmap_matched_matrix(detected, title="Matched peaks")
+
+# Clustered heatmap with row/column dendrograms; pass `groups` (one label per
+# row/sample) to add a species color strip and legend beside the map.
+ax = ma.heatmap_matched_matrix(detected, groups=group, title="Matched peaks")
 ```
 
 ## Example: top-5 m/z discriminating K. pneumoniae from E. coli
@@ -177,13 +180,19 @@ mapping) are sensitive and are **not** included in this repository; provide your
 data and mapping file and point the paths at them.
 
 Applied to a clinical-isolate cohort (_E. coli_ 58, _K. pneumoniae_ 52), the top-5 markers
-clearly separate the two species.
+clearly separate the two species. The heatmaps are drawn by `heatmap_matched_matrix()`, which
+hierarchically clusters both rows (samples) and columns (m/z), adds row/column dendrograms, and
+places a species color strip and legend beside the map (individual sample names are hidden).
 
-**1) Detection heatmap of all markers** (all features, green = detected; individual sample names are hidden)
+**1) All-marker detection heatmap** (hierarchically clustered; row/column dendrograms + species color strip)
 
 ![all markers heatmap](results/heatmap_all_markers.png)
 
-**2) Detection frequency by species** (top-5 markers, aggregated values)
+**2) Significant m/z heatmap** (only markers with adj. _p_ < 0.01; clustered with dendrograms)
+
+![significant markers heatmap](results/heatmap_significant.png)
+
+**3) Detection frequency by species** (top-5 markers, aggregated values)
 
 ![detection frequency](results/top5_detection_frequency.png)
 

@@ -3,8 +3,12 @@
 원본 MALDIassist R 패키지와 동일한 워크플로(로딩 → 전처리 → 피크 검출 → 필터 →
 정렬 → 빈발 m/z → 매칭 행렬)로 코호트 특징 행렬을 만든 뒤, 종(species) 라벨을
 이용해 두 그룹(E. coli / K. pneumoniae)을 구분하는 m/z 마커를 유의성 검정으로
-선정하고 결과 그림을 저장합니다. 히트맵은 전체 feature를, 막대그래프는 상위 5개
-마커의 종별 검출 빈도를 보여줍니다.
+선정하고 결과 그림을 저장합니다. 결과 그림은 세 가지입니다.
+
+1. 전체 feature 검출 히트맵: `heatmap_matched_matrix()`로 행(샘플)/열(m/z)을
+   계층적 군집화해 dendrogram과 종별 색 띠를 함께 그립니다.
+2. 유의 feature(adj. p < 0.01)만 추린 검출 히트맵(동일하게 dendrogram 포함).
+3. 상위 5개 마커의 종별 검출 빈도 막대그래프.
 
 참고 데이터: 이 예제는 PRIDE 데이터셋 PXD058284 ("Clinical Evaluation of Advanced
 MALDI-TOF MS for Carbapenemase Subtyping in Gram-negative Isolates", CC0,
@@ -157,53 +161,57 @@ def main() -> None:
     top_cols = list(top["feat_names"])
     top_mz = list(top["mz"])
 
-    # --- Figure 1: 전체 feature detected heatmap (유의성 순 정렬, 샘플명 숨김, 종별 정렬) ---
-    all_cols = list(sig["feat_names"])  # 유의성 순으로 정렬된 전체 feature
-    order = np.argsort(group, kind="mergesort")
-    det_all = detected.iloc[order][all_cols]
-    grp_sorted = group[order]
-    fig1, (cax, hax) = plt.subplots(
-        1, 2, figsize=(10, 6), gridspec_kw={"width_ratios": [0.03, 1]}
-    )
-    group_code = np.array([[0.0 if g == GROUP_A else 1.0] for g in grp_sorted])
-    cax.imshow(group_code, aspect="auto",
-               cmap=plt.matplotlib.colors.ListedColormap([COLORS[GROUP_A], COLORS[GROUP_B]]))
-    cax.set_xticks([])
-    cax.set_yticks([])
-    cax.set_ylabel("samples (grouped by species)")
-    hax.imshow(det_all.to_numpy(dtype=float), aspect="auto",
-               cmap=plt.matplotlib.colors.ListedColormap(["#F0F0F0", "#1A9850"]),
-               interpolation="nearest")
-    hax.set_xticks([])
-    hax.set_yticks([])
-    hax.set_xlabel(f"m/z markers (all {len(all_cols)} features, sorted by significance)")
-    hax.set_title("Detection of all discriminating peaks (green = detected)")
-    handles = [plt.matplotlib.patches.Patch(color=COLORS[g], label=SHORT[g])
-               for g in (GROUP_A, GROUP_B)]
-    hax.legend(handles=handles, loc="upper right", fontsize=8, framealpha=0.9)
-    out1 = os.path.join(args.out, "heatmap_all_markers.png")
-    fig1.savefig(out1, dpi=150, bbox_inches="tight")
+    # 샘플명으로 인덱싱한 종 라벨 (heatmap_matched_matrix의 groups= 인자용)
+    group_series = pd.Series(group, index=list(keep), name="group")
 
-    # --- Figure 2: top-5 m/z의 종별 검출 빈도 (집계값) ---
+    saved = []
+
+    # --- Figure 1: 전체 feature 검출 히트맵 (행/열 계층적 군집화 + 종별 색 띠) ---
+    # 제목은 열 dendrogram과 겹치므로 비워 두고 설명은 README 캡션에 맡긴다.
+    hax1 = ma.heatmap_matched_matrix(
+        detected, groups=group_series,
+        hide_rownames=True, hide_colnames=True,
+        title="",
+    )
+    out1 = os.path.join(args.out, "heatmap_all_markers.png")
+    hax1.figure.savefig(out1, dpi=150, bbox_inches="tight")
+    saved.append(out1)
+
+    # --- Figure 2: 유의 feature(adj. p < 0.01)만 추린 검출 히트맵 ---
+    sig_cols = list(sig.loc[sig["adj_pvalue"] < 0.01, "feat_names"])
+    if sig_cols:
+        hax2 = ma.heatmap_matched_matrix(
+            detected[sig_cols], groups=group_series,
+            hide_rownames=True, hide_colnames=True,
+            title="",
+        )
+        out2 = os.path.join(args.out, "heatmap_significant.png")
+        hax2.figure.savefig(out2, dpi=150, bbox_inches="tight")
+        saved.append(out2)
+    else:
+        print("\n(유의한 feature가 없어 heatmap_significant.png는 생략합니다.)")
+
+    # --- Figure 3: top-5 m/z의 종별 검출 빈도 (집계값) ---
     freq_a = [det_top_frac(detected, group, c, GROUP_A) for c in top_cols]
     freq_b = [det_top_frac(detected, group, c, GROUP_B) for c in top_cols]
     x = np.arange(len(top_mz))
     w = 0.38
-    fig2, ax2 = plt.subplots(figsize=(8, 5))
-    ax2.bar(x - w / 2, freq_a, w, label=f"{SHORT[GROUP_A]} (n={n_a})", color=COLORS[GROUP_A])
-    ax2.bar(x + w / 2, freq_b, w, label=f"{SHORT[GROUP_B]} (n={n_b})", color=COLORS[GROUP_B])
-    ax2.set_xticks(x)
-    ax2.set_xticklabels([f"{m:.1f}" for m in top_mz], rotation=45, ha="right")
-    ax2.set_ylabel("Detection frequency")
-    ax2.set_ylim(0, 1.05)
-    ax2.set_xlabel("m/z marker")
-    ax2.set_title(f"Top-{args.topn} discriminating m/z: detection frequency by species")
-    ax2.legend()
-    out2 = os.path.join(args.out, "top5_detection_frequency.png")
-    fig2.savefig(out2, dpi=150, bbox_inches="tight")
+    fig3, ax3 = plt.subplots(figsize=(8, 5))
+    ax3.bar(x - w / 2, freq_a, w, label=f"{SHORT[GROUP_A]} (n={n_a})", color=COLORS[GROUP_A])
+    ax3.bar(x + w / 2, freq_b, w, label=f"{SHORT[GROUP_B]} (n={n_b})", color=COLORS[GROUP_B])
+    ax3.set_xticks(x)
+    ax3.set_xticklabels([f"{m:.1f}" for m in top_mz], rotation=45, ha="right")
+    ax3.set_ylabel("Detection frequency")
+    ax3.set_ylim(0, 1.05)
+    ax3.set_xlabel("m/z marker")
+    ax3.set_title(f"Top-{args.topn} discriminating m/z: detection frequency by species")
+    ax3.legend()
+    out3 = os.path.join(args.out, "top5_detection_frequency.png")
+    fig3.savefig(out3, dpi=150, bbox_inches="tight")
+    saved.append(out3)
 
     print("\nSaved figures:")
-    for p in (out1, out2):
+    for p in saved:
         print(f"  {p}")
 
 
