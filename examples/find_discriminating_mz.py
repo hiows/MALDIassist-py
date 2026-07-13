@@ -2,8 +2,9 @@
 
 원본 MALDIassist R 패키지와 동일한 워크플로(로딩 → 전처리 → 피크 검출 → 필터 →
 정렬 → 빈발 m/z → 매칭 행렬)로 코호트 특징 행렬을 만든 뒤, 종(species) 라벨을
-이용해 두 그룹(E. coli / K. pneumoniae)을 구분하는 상위 5개 m/z 마커를 유의성
-검정으로 선정하고 결과 그림을 저장합니다.
+이용해 두 그룹(E. coli / K. pneumoniae)을 구분하는 m/z 마커를 유의성 검정으로
+선정하고 결과 그림을 저장합니다. 히트맵은 전체 feature를, 막대그래프는 상위 5개
+마커의 종별 검출 빈도를 보여줍니다.
 
 참고 데이터: 이 예제는 PRIDE 데이터셋 PXD058284 ("Clinical Evaluation of Advanced
 MALDI-TOF MS for Carbapenemase Subtyping in Gram-negative Isolates", CC0,
@@ -92,7 +93,6 @@ def run_pipeline(data_dir: str):
         freq_ratio_cutoff=0.9, hws_alignment=50.0,
     )
     aligned_peaks = {k: v["peaks"] for k, v in aligned["alignment_results"].items()}
-    aligned_spectra = {k: v["spectrum"] for k, v in aligned["alignment_results"].items()}
     exclude_mz = np.array(list(aligned["standard_mz"].values()))
 
     freq = ma.find_frequent_mz(aligned_peaks, bin_width=20.0, exclude_mz=exclude_mz)
@@ -102,7 +102,6 @@ def run_pipeline(data_dir: str):
     return {
         "detected": matched["detected_matrix"],
         "reference_mz": matched["reference_mz"],
-        "aligned_spectra": aligned_spectra,
     }
 
 
@@ -158,12 +157,13 @@ def main() -> None:
     top_cols = list(top["feat_names"])
     top_mz = list(top["mz"])
 
-    # --- Figure 1: 유의 마커 detected heatmap (샘플명 숨김, 종별 정렬) ---
+    # --- Figure 1: 전체 feature detected heatmap (유의성 순 정렬, 샘플명 숨김, 종별 정렬) ---
+    all_cols = list(sig["feat_names"])  # 유의성 순으로 정렬된 전체 feature
     order = np.argsort(group, kind="mergesort")
-    det_top = detected.iloc[order][top_cols]
+    det_all = detected.iloc[order][all_cols]
     grp_sorted = group[order]
     fig1, (cax, hax) = plt.subplots(
-        1, 2, figsize=(8, 6), gridspec_kw={"width_ratios": [0.04, 1]}
+        1, 2, figsize=(10, 6), gridspec_kw={"width_ratios": [0.03, 1]}
     )
     group_code = np.array([[0.0 if g == GROUP_A else 1.0] for g in grp_sorted])
     cax.imshow(group_code, aspect="auto",
@@ -171,18 +171,17 @@ def main() -> None:
     cax.set_xticks([])
     cax.set_yticks([])
     cax.set_ylabel("samples (grouped by species)")
-    hax.imshow(det_top.to_numpy(dtype=float), aspect="auto",
+    hax.imshow(det_all.to_numpy(dtype=float), aspect="auto",
                cmap=plt.matplotlib.colors.ListedColormap(["#F0F0F0", "#1A9850"]),
                interpolation="nearest")
-    hax.set_xticks(range(len(top_mz)))
-    hax.set_xticklabels([f"{m:.1f}" for m in top_mz], rotation=45, ha="right")
+    hax.set_xticks([])
     hax.set_yticks([])
-    hax.set_xlabel("m/z marker")
-    hax.set_title(f"Top-{args.topn} discriminating peaks (green = detected)")
+    hax.set_xlabel(f"m/z markers (all {len(all_cols)} features, sorted by significance)")
+    hax.set_title("Detection of all discriminating peaks (green = detected)")
     handles = [plt.matplotlib.patches.Patch(color=COLORS[g], label=SHORT[g])
                for g in (GROUP_A, GROUP_B)]
     hax.legend(handles=handles, loc="upper right", fontsize=8, framealpha=0.9)
-    out1 = os.path.join(args.out, "heatmap_top_markers.png")
+    out1 = os.path.join(args.out, "heatmap_all_markers.png")
     fig1.savefig(out1, dpi=150, bbox_inches="tight")
 
     # --- Figure 2: top-5 m/z의 종별 검출 빈도 (집계값) ---
@@ -203,28 +202,8 @@ def main() -> None:
     out2 = os.path.join(args.out, "top5_detection_frequency.png")
     fig2.savefig(out2, dpi=150, bbox_inches="tight")
 
-    # --- Figure 3: 두 종 평균 스펙트럼 오버레이 + top-5 m/z 표시 ---
-    grid, mean_a = mean_spectrum(res["aligned_spectra"], keep, group, GROUP_A)
-    _, mean_b = mean_spectrum(res["aligned_spectra"], keep, group, GROUP_B)
-    fig3, ax3 = plt.subplots(figsize=(10, 5))
-    ax3.plot(grid, mean_a, color=COLORS[GROUP_A], lw=1.2, label=f"{SHORT[GROUP_A]} (mean)")
-    ax3.plot(grid, mean_b, color=COLORS[GROUP_B], lw=1.2, label=f"{SHORT[GROUP_B]} (mean)")
-    ymax = float(np.nanmax([mean_a.max(), mean_b.max()]))
-    for m in top_mz:
-        ax3.axvline(m, color="gray", ls=":", lw=1.0)
-        ax3.text(m, ymax * 1.02, f"{m:.0f}", rotation=90, va="bottom", ha="center",
-                 fontsize=8, color="black")
-    ax3.set_xlim(grid.min(), grid.max())
-    ax3.set_ylim(0, ymax * 1.15)
-    ax3.set_xlabel("m/z")
-    ax3.set_ylabel("Mean intensity")
-    ax3.set_title(f"Mean spectra with top-{args.topn} discriminating m/z")
-    ax3.legend()
-    out3 = os.path.join(args.out, "top5_mean_spectra.png")
-    fig3.savefig(out3, dpi=150, bbox_inches="tight")
-
     print("\nSaved figures:")
-    for p in (out1, out2, out3):
+    for p in (out1, out2):
         print(f"  {p}")
 
 
@@ -233,27 +212,6 @@ def det_top_frac(detected: pd.DataFrame, group: np.ndarray, col: str, species: s
     if not np.any(mask):
         return 0.0
     return float(np.mean(detected.loc[mask, col].to_numpy(dtype=float)))
-
-
-def mean_spectrum(aligned_spectra: dict, samples, group: np.ndarray, species: str,
-                  n_grid: int = 4000):
-    """정렬된 스펙트럼을 공통 m/z 그리드에 보간해 종별 평균을 계산."""
-    from maldiassist._util import as_xy
-
-    members = [s for s, g in zip(samples, group) if g == species]
-    # 공통 m/z 범위 = 멤버들의 교집합 범위
-    los, his = [], []
-    for s in members:
-        x, _, _ = as_xy(aligned_spectra[s])
-        los.append(x.min())
-        his.append(x.max())
-    lo, hi = max(los), min(his)
-    grid = np.linspace(lo, hi, n_grid)
-    acc = np.zeros_like(grid)
-    for s in members:
-        x, y, _ = as_xy(aligned_spectra[s])
-        acc += np.interp(grid, x, y)
-    return grid, acc / len(members)
 
 
 if __name__ == "__main__":

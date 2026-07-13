@@ -150,17 +150,13 @@ data and mapping file and point the paths at them.
 Applied to a clinical-isolate cohort (_E. coli_ 58, _K. pneumoniae_ 52), the top-5 markers
 clearly separate the two species.
 
-**1) Detection heatmap of the top-5 markers** (green = detected; individual sample names are hidden)
+**1) Detection heatmap of all markers** (all features, green = detected; individual sample names are hidden)
 
-![top markers heatmap](results/heatmap_top_markers.png)
+![all markers heatmap](results/heatmap_all_markers.png)
 
-**2) Detection frequency by species** (aggregated values)
+**2) Detection frequency by species** (top-5 markers, aggregated values)
 
 ![detection frequency](results/top5_detection_frequency.png)
-
-**3) Mean spectra of both species with the top-5 m/z positions**
-
-![mean spectra](results/top5_mean_spectra.png)
 
 ## Reproducibility against the R ground truth
 
