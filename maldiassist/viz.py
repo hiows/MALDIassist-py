@@ -100,16 +100,19 @@ def visualize_spectra(spectra, interest_range=None, xlim=None, ylim=None,
     return ax
 
 
-def _cluster_order(mat):
-    from scipy.cluster.hierarchy import leaves_list, linkage
+def _linkage(mat):
+    """Hierarchical (complete-linkage, Euclidean) linkage matrix, or None.
+
+    Returns ``None`` when there are fewer than two rows to cluster.
+    """
+    from scipy.cluster.hierarchy import linkage
     from scipy.spatial.distance import pdist
 
     filled = np.nan_to_num(mat, nan=0.0)
     if filled.shape[0] < 2:
-        return np.arange(filled.shape[0])
+        return None
     d = pdist(filled, metric="euclidean")
-    z = linkage(d, method="complete")
-    return leaves_list(z)
+    return linkage(d, method="complete")
 
 
 def _normalize_groups(groups, row_labels):
@@ -179,12 +182,15 @@ def heatmap_matched_matrix(matched_matrix, row_cluster=True, col_cluster=True,
         Samples as rows and markers as columns, e.g. the ``detected_matrix``
         or ``delta_mz_matrix`` from :func:`build_matched_matrix`.
     row_cluster, col_cluster : bool
-        Whether to hierarchically cluster rows / columns.
+        Whether to hierarchically cluster rows / columns. When clustering is
+        active and ``ax`` is not supplied, R pheatmap-style dendrograms are
+        drawn along the corresponding side.
     groups : sequence or mapping, optional
         Per-sample group labels. A ``dict`` or named ``pandas.Series`` is
         matched by row name; a plain sequence is used positionally and must
         match the number of rows. When supplied, a Viridis color strip is
-        drawn to the left of the heatmap with a matching legend.
+        drawn to the left of the heatmap and a group legend is placed outside
+        the plot on the right.
     title : str, optional
         Plot title.
     center_at_zero : bool or None
@@ -224,8 +230,12 @@ def heatmap_matched_matrix(matched_matrix, row_cluster=True, col_cluster=True,
     if mat.shape[1] < 2:
         col_cluster = False
 
-    row_ord = _cluster_order(mat) if row_cluster else np.arange(mat.shape[0])
-    col_ord = _cluster_order(mat.T) if col_cluster else np.arange(mat.shape[1])
+    from scipy.cluster.hierarchy import leaves_list
+
+    row_z = _linkage(mat) if row_cluster else None
+    col_z = _linkage(mat.T) if col_cluster else None
+    row_ord = leaves_list(row_z) if row_z is not None else np.arange(mat.shape[0])
+    col_ord = leaves_list(col_z) if col_z is not None else np.arange(mat.shape[1])
 
     mat_o = mat[np.ix_(row_ord, col_ord)]
     row_labels = [row_labels[i] for i in row_ord]
@@ -241,7 +251,6 @@ def heatmap_matched_matrix(matched_matrix, row_cluster=True, col_cluster=True,
         center_at_zero = has_negative
 
     show_colorbar = True
-    detected_legend = False
     if center_at_zero:
         max_abs = float(np.max(np.abs(vals))) if vals.size else 1.0
         if max_abs <= 0:
@@ -253,7 +262,6 @@ def heatmap_matched_matrix(matched_matrix, row_cluster=True, col_cluster=True,
         cmap = ListedColormap(["#F0F0F0", "#1A9850"])
         vmin, vmax = 0.0, 1.0
         show_colorbar = False
-        detected_legend = True
     else:
         cmap = plt.get_cmap("viridis").copy()
         vmin = 0.0
@@ -261,24 +269,70 @@ def heatmap_matched_matrix(matched_matrix, row_cluster=True, col_cluster=True,
 
     cmap.set_bad("#e5e5e5")
 
-    # --- layout: optional group color strip + heatmap ---
+    # --- layout: optional dendrograms + group color strip + heatmap ---
+    from scipy.cluster.hierarchy import dendrogram
+
+    have_row_dendro = row_z is not None
+    have_col_dendro = col_z is not None
+    have_strip = group_values is not None
+
+    if have_strip:
+        levels = sorted({str(g) for g in group_values})
+        colors = _group_annotation_colors(levels)
+
     if ax is None:
-        fig = plt.figure(figsize=(10, 6))
-        if group_values is not None:
-            gs = fig.add_gridspec(1, 2, width_ratios=[0.03, 1], wspace=0.02)
-            cax = fig.add_subplot(gs[0, 0])
-            hax = fig.add_subplot(gs[0, 1])
-        else:
-            cax = None
-            hax = fig.add_subplot(1, 1, 1)
+        col_names, col_ratios = [], []
+        if have_row_dendro:
+            col_names.append("rowdendro")
+            col_ratios.append(0.18)
+        if have_strip:
+            col_names.append("strip")
+            col_ratios.append(0.04)
+        col_names.append("heat")
+        col_ratios.append(1.0)
+
+        row_names, row_ratios = [], []
+        if have_col_dendro:
+            row_names.append("coldendro")
+            row_ratios.append(0.18)
+        row_names.append("heat")
+        row_ratios.append(1.0)
+
+        width = 9.0 + (1.6 if have_row_dendro else 0.0)
+        height = 6.0 + (1.2 if have_col_dendro else 0.0)
+        fig = plt.figure(figsize=(width, height))
+        gs = fig.add_gridspec(
+            len(row_ratios), len(col_ratios),
+            width_ratios=col_ratios, height_ratios=row_ratios,
+            wspace=0.02, hspace=0.02,
+        )
+        ci = {name: i for i, name in enumerate(col_names)}
+        ri = {name: i for i, name in enumerate(row_names)}
+        heat_r, heat_c = ri["heat"], ci["heat"]
+        hax = fig.add_subplot(gs[heat_r, heat_c])
+        cax = fig.add_subplot(gs[heat_r, ci["strip"]]) if have_strip else None
+        row_dax = fig.add_subplot(gs[heat_r, ci["rowdendro"]]) if have_row_dendro else None
+        col_dax = fig.add_subplot(gs[ri["coldendro"], heat_c]) if have_col_dendro else None
     else:
         hax = ax
         fig = ax.figure
-        cax = ax.inset_axes([-0.05, 0.0, 0.03, 1.0]) if group_values is not None else None
+        cax = ax.inset_axes([-0.06, 0.0, 0.04, 1.0]) if have_strip else None
+        row_dax = None  # dendrograms need sibling axes; only drawn when ax is None
+        col_dax = None
 
+    # dendrograms (leaf order already applied to mat_o / row_ord / col_ord)
+    if row_dax is not None:
+        dendrogram(row_z, ax=row_dax, orientation="left", no_labels=True,
+                   color_threshold=0, above_threshold_color="#555555")
+        row_dax.invert_yaxis()  # align first leaf (top of heatmap) with imshow
+        row_dax.axis("off")
+    if col_dax is not None:
+        dendrogram(col_z, ax=col_dax, orientation="top", no_labels=True,
+                   color_threshold=0, above_threshold_color="#555555")
+        col_dax.axis("off")
+
+    # group annotation color strip
     if cax is not None:
-        levels = sorted({str(g) for g in group_values})
-        colors = _group_annotation_colors(levels)
         level_to_idx = {lvl: i for i, lvl in enumerate(levels)}
         codes = np.array([[level_to_idx[str(g)]] for g in group_values], dtype=float)
         ann_cmap = ListedColormap([colors[lvl] for lvl in levels])
@@ -286,7 +340,6 @@ def heatmap_matched_matrix(matched_matrix, row_cluster=True, col_cluster=True,
                    vmin=0, vmax=max(len(levels) - 1, 1), interpolation="nearest")
         cax.set_xticks([])
         cax.set_yticks([])
-        cax.set_ylabel("samples (grouped)")
 
     im = hax.imshow(mat_o, aspect="auto", cmap=cmap, vmin=vmin, vmax=vmax,
                     interpolation="nearest")
@@ -303,21 +356,18 @@ def heatmap_matched_matrix(matched_matrix, row_cluster=True, col_cluster=True,
     else:
         hax.set_yticks([])
 
-    if detected_legend:
-        det_handles = [
-            Patch(facecolor="#1A9850", label="detected"),
-            Patch(facecolor="#F0F0F0", edgecolor="#cccccc", label="not detected"),
-        ]
-        leg1 = hax.legend(handles=det_handles, loc="upper right",
-                          fontsize=7, framealpha=0.9)
-        hax.add_artist(leg1)
-
-    if group_values is not None:
-        grp_handles = [Patch(facecolor=colors[lvl], label=lvl) for lvl in levels]
-        hax.legend(handles=grp_handles, loc="lower right", fontsize=7,
-                   framealpha=0.9, title="group")
-
     if show_colorbar:
-        fig.colorbar(im, ax=hax)
+        fig.colorbar(im, ax=hax, fraction=0.046, pad=0.04)
+
+    # group legend, placed outside the heatmap on the right (R pheatmap style)
+    if have_strip:
+        grp_handles = [Patch(facecolor=colors[lvl], label=lvl) for lvl in levels]
+        legend_x = 1.32 if show_colorbar else 1.04
+        hax.legend(handles=grp_handles, title="group",
+                   loc="upper left", bbox_to_anchor=(legend_x, 1.0),
+                   fontsize=8, title_fontsize=8, framealpha=0.9,
+                   borderaxespad=0.0)
+        if ax is None:
+            fig.subplots_adjust(right=0.80 if show_colorbar else 0.84)
 
     return hax
