@@ -5,14 +5,18 @@
 이용해 두 그룹(E. coli / K. pneumoniae)을 구분하는 상위 5개 m/z 마커를 유의성
 검정으로 선정하고 결과 그림을 저장합니다.
 
+참고 데이터: 이 예제는 PRIDE 데이터셋 PXD058284 ("Clinical Evaluation of Advanced
+MALDI-TOF MS for Carbapenemase Subtyping in Gram-negative Isolates", CC0,
+https://www.ebi.ac.uk/pride/archive/projects/PXD058284)를 참고했습니다.
+
 사용법::
 
     python examples/find_discriminating_mz.py \
         --data-dir TestData \
-        --meta "Test/NC info.xlsx" \
+        --meta metadata.xlsx \
         --out results
 
-주의: TestData(원시 스펙트럼)와 메타(nc info)는 민감 정보이므로 저장소에
+주의: TestData(원시 스펙트럼)와 메타(샘플-종 매핑)는 민감 정보이므로 저장소에
 포함되지 않습니다. 사용자는 동일한 형식의 Bruker 데이터와 (샘플, 종) 매핑
 파일을 준비해 경로만 지정하면 됩니다. 메타 파일은 첫 열이 샘플 이름, 둘째 열이
 종 이름인 xlsx/csv면 됩니다.
@@ -110,7 +114,7 @@ def _marker_mz_map(detected: pd.DataFrame, reference_mz: np.ndarray) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-dir", default=os.path.join(ROOT, "TestData"))
-    parser.add_argument("--meta", default=os.path.join(ROOT, "Test", "NC info.xlsx"))
+    parser.add_argument("--meta", default=os.path.join(ROOT, "metadata.xlsx"))
     parser.add_argument("--out", default=os.path.join(ROOT, "results"))
     parser.add_argument("--topn", type=int, default=5)
     parser.add_argument("--stat", default="wilcox", choices=["wilcox", "t.test"])
@@ -124,7 +128,7 @@ def main() -> None:
     mz_map = _marker_mz_map(detected, res["reference_mz"])
 
     # 두 종에 속하는 샘플만 선택
-    # 로더가 중복 처리를 위해 이름에 접두사(예: "TestData/NC1")를 붙일 수 있으므로
+    # 로더가 중복 처리를 위해 이름에 접두사(예: "TestData/sample")를 붙일 수 있으므로
     # 마지막 토큰을 기준으로 종 라벨을 매칭한다.
     def _norm(name: str) -> str:
         return str(name).replace("\\", "/").split("/")[-1]
