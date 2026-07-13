@@ -12,13 +12,25 @@ zzztest/
 *.egg-info/
 build/
 dist/
+wheelhouse/
+_skbuild/
+CMakeCache.txt
+CMakeFiles/
+
+# --- Compiled C++ extensions ---
+*.so
+*.pyd
+*.o
+*.obj
 
 # --- Python ---
 __pycache__/
 *.py[cod]
 .venv/
+.venv_build/
 venv/
 .env
+.pytest_cache/
 
 # --- Results: keep figures only, drop data-like outputs ---
 results/*
@@ -28,3 +40,6 @@ results/*
 # --- OS / editor ---
 .DS_Store
 Thumbs.db
+
+# Dev utilities that depend on non-shipped ground-truth/data
+tools/

@@ -1,6 +1,6 @@
 # maldiassist (Python)
 
-> Python package **v0.1.0** · Original R package: [hiows/MALDIassist](https://github.com/hiows/MALDIassist) (v0.1.3)
+> Python package **v0.2.0** · Original R package: [hiows/MALDIassist](https://github.com/hiows/MALDIassist) (v0.1.3)
 
 A pure-Python port of the `MALDIassist` R package (0.1.3, R + Rcpp/C++) that reproduces
 the **same algorithms and numerical results**. It provides the same five-step workflow as
@@ -16,23 +16,40 @@ TestData set.
 
 Requires Python 3.9+.
 
-Install directly from GitHub (the Python equivalent of R's
-`remotes::install_github("hiows/MALDIassist")`):
+The package ships a small C++ extension (a nanobind port of the original Rcpp
+kernel-regression core) that accelerates peak detection. Pre-built **wheels**
+bundle this extension, so no compiler is needed:
 
 ```bash
-# core only (numpy, scipy, pandas)
-pip install "git+https://github.com/hiows/MALDIassist-py.git"
-
-# with visualization (matplotlib) -- needed for plots/heatmaps
-pip install "maldiassist[viz] @ git+https://github.com/hiows/MALDIassist-py.git"
+# once published to PyPI (recommended)
+pip install maldiassist
+pip install "maldiassist[viz]"   # with visualization (matplotlib)
 ```
+
+Until the PyPI release, install a pre-built wheel from the GitHub Releases page,
+e.g.:
+
+```bash
+pip install "maldiassist @ https://github.com/hiows/MALDIassist-py/releases/latest/download/<wheel-file>.whl"
+```
+
+Installing from source (git or sdist) instead requires a C++17 compiler and CMake
+(handled automatically by `scikit-build-core`):
+
+```bash
+pip install "git+https://github.com/hiows/MALDIassist-py.git"
+```
+
+> The C++ extension is optional at runtime: if it cannot be imported the package
+> transparently falls back to the pure-Python implementation, producing identical
+> results (just slower).
 
 For development (clone first, then editable install):
 
 ```bash
 git clone https://github.com/hiows/MALDIassist-py.git
 cd MALDIassist-py
-pip install -e .              # core (numpy, scipy, pandas)
+pip install -e .              # core (numpy, scipy, pandas) + C++ extension
 pip install -e ".[viz]"       # with visualization (matplotlib)
 pip install -e ".[viz,test]"  # visualization + test tooling
 ```
@@ -58,6 +75,18 @@ R `lowess`, `p.adjust`, Wilcoxon continuity correction, etc.) are reproduced ide
 > Note: kernel summation is computed in the **same sequential accumulation order** as R's
 > Rcpp loop. NumPy's default pairwise summation can introduce tiny floating-point
 > differences over symmetric windows that flip tie-breaking in extremum selection.
+
+### Performance
+
+The kernel-regression hot paths (Gaussian KDE grid evaluation with 1st-3rd
+derivatives and bisection root finding) are implemented in C++ via
+[nanobind](https://github.com/wjakob/nanobind) (`src/spectrum_math_cpp.cpp`, a
+direct port of the original Rcpp `spectrum_math.cpp`). The compiled backend uses
+the identical sequential summation order as the pure-Python reference, so results
+match to floating-point tolerance while running substantially faster. When the
+extension is unavailable, `maldiassist.spectrum_math` falls back to the
+pure-Python path automatically. Set `MALDIASSIST_DISABLE_CPP=1` to force the
+pure-Python backend (used by the parity tests in `tests/test_kde_parity.py`).
 
 ## Usage (same workflow as the original)
 
