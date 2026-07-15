@@ -1,6 +1,6 @@
 # maldiassist (Python)
 
-> Python package **v1.0.0** · Original R package: [hiows/MALDIassist](https://github.com/hiows/MALDIassist) (v1.0.0)
+> Python package **v1.0.1** · Original R package: [hiows/MALDIassist](https://github.com/hiows/MALDIassist) (v1.0.0)
 
 **maldiassist** is a Python port of the [MALDIassist](https://github.com/hiows/MALDIassist) R package
 (v1.0.0, R + Rcpp/C++). It reproduces the **same algorithms and numerical results** within
@@ -149,8 +149,9 @@ filtered_peaks_list = ma.filter_peaks_spectra(
 
 ### 5. Visualization
 
-Overlay a raw spectrum (gray), its preprocessed version (red), and the filtered peaks (blue) —
-this reproduces the figure at the top of this README (requires the `[viz]` extra):
+Overlay a raw spectrum (gray), its preprocessed version (red), and the filtered peaks (blue)
+in the same style as the Example figure (requires the `[viz]` extra). The exact spectrum
+depends on your `data/` directory and which sample is selected.
 
 ```python
 import matplotlib.pyplot as plt
@@ -340,7 +341,7 @@ Bruker cohort and parameter set (Quick start / cohort analysis above). Summary:
 | Loading / preprocessing / peak detection / filtering / alignment | m/z and intensity within ~5×10⁻¹¹ |
 | `find_frequent_mz` | identical row count; count and freq_ratio exact |
 | `build_matched_matrix` | detection matrix exact (difference 0) |
-| `estimate_significance` | p-value difference ~10⁻¹⁶; **234** features at adj. p < 0.01 (R and Python agree) |
+| `estimate_significance` | p-value difference ~10⁻¹⁶; R and Python agree on adj. p < 0.01 calls |
 
 Core algorithmic details (Nadaraya–Watson kernel regression with 1st–3rd derivatives,
 SNIP/TopHat baselines, Savitzky–Golay boundary coefficients, R `hist`/`pretty` binning,
@@ -397,48 +398,6 @@ tolerance while running substantially faster. When the extension is unavailable,
 
 ---
 
-## Example script: top-5 discriminating m/z
-
-[`examples/find_discriminating_mz.py`](examples/find_discriminating_mz.py) builds the cohort
-feature matrix with the workflow above, then uses species labels to select the **top-5 m/z
-markers that discriminate *Klebsiella pneumoniae* from *Escherichia coli*** via a significance
-test (t-test by default, BH correction).
-
-> Reference data: this example follows the PRIDE dataset
-> [PXD058284](https://www.ebi.ac.uk/pride/archive/projects/PXD058284) ("Clinical Evaluation
-> of Advanced MALDI-TOF MS for Carbapenemase Subtyping in Gram-negative Isolates", CC0),
-> Bruker flex MALDI-TOF spectra of carbapenemase-producing Enterobacterales.
-
-```bash
-pip install -e ".[viz]"
-pip install openpyxl   # if the metadata is an xlsx file
-
-python examples/find_discriminating_mz.py \
-    --data-dir data/raw \
-    --meta metadata.xlsx \
-    --out results
-```
-
-The metadata file needs the **first column to be the sample name and the second column to be
-the species name** (xlsx or csv). Raw spectra and the metadata (sample-to-species mapping) are
-**not** included in this repository; provide your own Bruker data and mapping file.
-
-The script saves three figures:
-
-**1) All-marker detection heatmap** (hierarchically clustered; row/column dendrograms + species color strip)
-
-![all markers heatmap](results/heatmap_all_markers.png)
-
-**2) Significant m/z heatmap** (only markers with adj. *p* < 0.01; clustered with dendrograms)
-
-![significant markers heatmap](results/heatmap_significant.png)
-
-**3) Detection frequency by species** (top-5 markers, aggregated values)
-
-![detection frequency](results/top5_detection_frequency.png)
-
----
-
 ## Author
 
 **Wonseok Oh** ([ORCID: 0009-0002-0687-8466](https://orcid.org/0009-0002-0687-8466))
@@ -459,7 +418,7 @@ A BibTeX entry:
   title  = {MALDIassist: Mathematical Utilities for MALDI-TOF Mass Spectrometry},
   author = {Wonseok Oh},
   year   = {2026},
-  note   = {R package version 1.0.0; Python port version 1.0.0},
+  note   = {R package version 1.0.0; Python port version 1.0.1},
   url    = {https://github.com/hiows/MALDIassist},
   doi    = {10.5281/zenodo.21307258}
 }
