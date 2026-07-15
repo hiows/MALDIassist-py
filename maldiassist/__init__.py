@@ -42,7 +42,7 @@ try:  # optional (matplotlib)
 except Exception:  # pragma: no cover - matplotlib optional
     pass
 
-__version__ = "0.2.2"
+__version__ = "1.0.0"
 
 __all__ = [
     "load_maldi_spectra",

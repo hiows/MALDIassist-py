@@ -132,7 +132,7 @@ def _normalize_groups(groups, row_labels):
         missing = [r for r in row_labels if r not in groups]
         if missing:
             raise ValueError(
-                "When 'groups' is a mapping, its keys must include all row "
+                "When 'group' is a mapping, its keys must include all row "
                 f"names in 'matched_matrix'. Missing: {missing[:5]}"
             )
         return [groups[r] for r in row_labels]
@@ -143,7 +143,7 @@ def _normalize_groups(groups, row_labels):
         values = list(groups.to_numpy())
         if len(values) != n:
             raise ValueError(
-                "'groups' must have the same length as the number of rows in "
+                "'group' must have the same length as the number of rows in "
                 f"'matched_matrix' ({len(values)} != {n})."
             )
         return values
@@ -151,7 +151,7 @@ def _normalize_groups(groups, row_labels):
     values = list(groups)
     if len(values) != n:
         raise ValueError(
-            "'groups' must have the same length as the number of rows in "
+            "'group' must have the same length as the number of rows in "
             f"'matched_matrix' ({len(values)} != {n})."
         )
     return values
@@ -171,7 +171,7 @@ def _group_annotation_colors(levels):
 
 
 def heatmap_matched_matrix(matched_matrix, row_cluster=True, col_cluster=True,
-                           groups=None, title="Matched peaks heatmap",
+                           group=None, title="Matched peaks heatmap",
                            center_at_zero=None, hide_rownames=False,
                            hide_colnames=False, ax=None):
     """Heatmap of a sample-by-marker matched-peak matrix.
@@ -185,7 +185,7 @@ def heatmap_matched_matrix(matched_matrix, row_cluster=True, col_cluster=True,
         Whether to hierarchically cluster rows / columns. When clustering is
         active and ``ax`` is not supplied, R pheatmap-style dendrograms are
         drawn along the corresponding side.
-    groups : sequence or mapping, optional
+    group : sequence or mapping, optional
         Per-sample group labels. A ``dict`` or named ``pandas.Series`` is
         matched by row name; a plain sequence is used positionally and must
         match the number of rows. When supplied, a Viridis color strip is
@@ -203,7 +203,7 @@ def heatmap_matched_matrix(matched_matrix, row_cluster=True, col_cluster=True,
         Hide sample (row) / marker (column) tick labels.
     ax : matplotlib.axes.Axes, optional
         Existing axes to draw the heatmap on. When omitted a new figure is
-        created (with a group color strip when ``groups`` is given).
+        created (with a group color strip when ``group`` is given).
 
     Returns
     -------
@@ -223,7 +223,7 @@ def heatmap_matched_matrix(matched_matrix, row_cluster=True, col_cluster=True,
         row_labels = [f"sample_{i+1}" for i in range(mat.shape[0])]
         col_labels = [f"feature_{i+1}" for i in range(mat.shape[1])]
 
-    group_values = _normalize_groups(groups, row_labels)
+    group_values = _normalize_groups(group, row_labels)
 
     if mat.shape[0] < 2:
         row_cluster = False

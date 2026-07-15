@@ -17,11 +17,11 @@ https://www.ebi.ac.uk/pride/archive/projects/PXD058284)를 참고했습니다.
 사용법::
 
     python examples/find_discriminating_mz.py \
-        --data-dir TestData \
+        --data-dir data/raw \
         --meta metadata.xlsx \
         --out results
 
-주의: TestData(원시 스펙트럼)와 메타(샘플-종 매핑)는 민감 정보이므로 저장소에
+주의: 원시 스펙트럼과 메타(샘플-종 매핑)는 저장소에
 포함되지 않습니다. 사용자는 동일한 형식의 Bruker 데이터와 (샘플, 종) 매핑
 파일을 준비해 경로만 지정하면 됩니다. 메타 파일은 첫 열이 샘플 이름, 둘째 열이
 종 이름인 xlsx/csv면 됩니다.
@@ -77,24 +77,26 @@ def load_species_map(meta_path: str) -> dict:
 
 def run_pipeline(data_dir: str):
     """README와 동일한 파라미터로 코호트 특징 행렬까지 계산한다."""
-    raw = ma.load_maldi_spectra(data_dir, return_dir=ROOT)
+    raw = ma.load_maldi_spectra(data_dir)
     pp = ma.preprocess_maldi_spectra(
-        raw, hws_sg=10, pno_sg=3, baseline_type="snip", iter_snip=100
+        raw, hws_sg=10, pno_sg=3, baseline_type="snip", iter_snip=50
     )
+    kde = ma.build_kde_spectra(pp, bw=1)
+    kde_spectra = {k: v["spectrum"] for k, v in kde.items()}
     peaks = ma.find_peaks_spectra(
         pp, bw=1.0, hws_peaks=10.0, weight_type="raw",
-        cutoff_kappa_peak_strength=0.3,
+        cutoff_kappa_peak_strength=0.3, peak_retention_fraction=0.25,
     )
     fpeaks = ma.filter_peaks_spectra(
-        pp, peaks,
+        kde_spectra, peaks,
         cutoff_peak_intensity=100.0,
-        cutoff_peak_prominence=100.0,
+        cutoff_peak_prominence=50.0,
         cutoff_peak_strength=0.5,
         normalization_type="raw",
     )
     aligned = ma.align_spectra(
-        pp, fpeaks, bin_width=20.0, alignment_mode="linear",
-        freq_ratio_cutoff=0.9, hws_alignment=50.0,
+        kde_spectra, fpeaks, bin_width=20.0, alignment_mode="linear",
+        hws_alignment=50.0,
     )
     aligned_peaks = {k: v["peaks"] for k, v in aligned["alignment_results"].items()}
     exclude_mz = np.array(list(aligned["standard_mz"].values()))
@@ -116,11 +118,11 @@ def _marker_mz_map(detected: pd.DataFrame, reference_mz: np.ndarray) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--data-dir", default=os.path.join(ROOT, "TestData"))
-    parser.add_argument("--meta", default=os.path.join(ROOT, "metadata.xlsx"))
+    parser.add_argument("--data-dir", default=os.path.join(ROOT, "data", "raw"))
+    parser.add_argument("--meta", default=os.path.join(ROOT, "data", "metadata.xlsx"))
     parser.add_argument("--out", default=os.path.join(ROOT, "results"))
     parser.add_argument("--topn", type=int, default=5)
-    parser.add_argument("--stat", default="wilcox", choices=["wilcox", "t.test"])
+    parser.add_argument("--stat", default="t.test", choices=["wilcox", "t.test"])
     args = parser.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
@@ -131,7 +133,7 @@ def main() -> None:
     mz_map = _marker_mz_map(detected, res["reference_mz"])
 
     # 두 종에 속하는 샘플만 선택
-    # 로더가 중복 처리를 위해 이름에 접두사(예: "TestData/sample")를 붙일 수 있으므로
+    # 로더가 중복 처리를 위해 이름에 경로 접두사를 붙일 수 있으므로
     # 마지막 토큰을 기준으로 종 라벨을 매칭한다.
     def _norm(name: str) -> str:
         return str(name).replace("\\", "/").split("/")[-1]
@@ -161,7 +163,7 @@ def main() -> None:
     top_cols = list(top["feat_names"])
     top_mz = list(top["mz"])
 
-    # 샘플명으로 인덱싱한 종 라벨 (heatmap_matched_matrix의 groups= 인자용)
+    # 샘플명으로 인덱싱한 종 라벨 (heatmap_matched_matrix의 group= 인자용)
     group_series = pd.Series(group, index=list(keep), name="group")
 
     saved = []
@@ -169,7 +171,7 @@ def main() -> None:
     # --- Figure 1: 전체 feature 검출 히트맵 (행/열 계층적 군집화 + 종별 색 띠) ---
     # 제목은 열 dendrogram과 겹치므로 비워 두고 설명은 README 캡션에 맡긴다.
     hax1 = ma.heatmap_matched_matrix(
-        detected, groups=group_series,
+        detected, group=group_series,
         hide_rownames=True, hide_colnames=True,
         title="",
     )
@@ -181,7 +183,7 @@ def main() -> None:
     sig_cols = list(sig.loc[sig["adj_pvalue"] < 0.01, "feat_names"])
     if sig_cols:
         hax2 = ma.heatmap_matched_matrix(
-            detected[sig_cols], groups=group_series,
+            detected[sig_cols], group=group_series,
             hide_rownames=True, hide_colnames=True,
             title="",
         )
