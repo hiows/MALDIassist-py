@@ -1,6 +1,6 @@
 # maldiassist (Python)
 
-> Python package **v1.0.1** · Original R package: [hiows/MALDIassist](https://github.com/hiows/MALDIassist) (v1.0.0)
+> Python package **v1.0.0** · Original R package: [hiows/MALDIassist](https://github.com/hiows/MALDIassist) (v1.0.0)
 
 **maldiassist** is a Python port of the [MALDIassist](https://github.com/hiows/MALDIassist) R package
 (v1.0.0, R + Rcpp/C++). It reproduces the **same algorithms and numerical results** within
@@ -418,7 +418,7 @@ A BibTeX entry:
   title  = {MALDIassist: Mathematical Utilities for MALDI-TOF Mass Spectrometry},
   author = {Wonseok Oh},
   year   = {2026},
-  note   = {R package version 1.0.0; Python port version 1.0.1},
+  note   = {R package version 1.0.0; Python port version 1.0.0},
   url    = {https://github.com/hiows/MALDIassist},
   doi    = {10.5281/zenodo.21307258}
 }
