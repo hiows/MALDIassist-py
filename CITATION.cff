@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+title: "maldiassist: Mathematical Utilities for MALDI-TOF Mass Spectrometry (Python)"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: Oh
+    given-names: Wonseok
+    orcid: "https://orcid.org/0009-0002-0687-8466"
+repository-code: "https://github.com/hiows/MALDIassist-py"
+url: "https://pypi.org/project/maldiassist/"
+version: "1.0.0"
+date-released: 2026-07-16
+doi: 10.5281/zenodo.21396132
+license: MIT
+keywords:
+  - MALDI-TOF
+  - mass spectrometry
+  - peak detection
+  - kernel regression
+abstract: >-
+  Python port of the MALDIassist R package for MALDI-TOF mass spectrometry:
+  loading, preprocessing, Gaussian KDE-based peak detection, cohort analysis,
+  and visualization.

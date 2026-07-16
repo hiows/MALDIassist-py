@@ -1,5 +1,8 @@
 # maldiassist (Python)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21396132.svg)](https://doi.org/10.5281/zenodo.21396132)
+[![PyPI](https://img.shields.io/pypi/v/maldiassist.svg)](https://pypi.org/project/maldiassist/)
+
 > Python package **v1.0.0** · Original R package: [hiows/MALDIassist](https://github.com/hiows/MALDIassist) (v1.0.0)
 
 **maldiassist** is a Python port of the [MALDIassist](https://github.com/hiows/MALDIassist) R package
@@ -398,28 +401,24 @@ tolerance while running substantially faster. When the extension is unavailable,
 
 ## How to cite
 
-If you use **maldiassist** in your research, please cite the underlying MALDIassist software.
-From R you can run:
-
-```r
-citation("MALDIassist")
-```
-
-A BibTeX entry:
+If you use **maldiassist** (this Python package) in your research, please cite:
 
 ```bibtex
-@Manual{maldiassist,
-  title  = {MALDIassist: Mathematical Utilities for MALDI-TOF Mass Spectrometry},
-  author = {Wonseok Oh},
-  year   = {2026},
-  note   = {R package version 1.0.0; Python port version 1.0.0},
-  url    = {https://github.com/hiows/MALDIassist},
-  doi    = {10.5281/zenodo.21307258}
+@software{maldiassist_py,
+  title   = {maldiassist: Mathematical Utilities for MALDI-TOF Mass Spectrometry (Python)},
+  author  = {Wonseok Oh},
+  year    = {2026},
+  version = {1.0.0},
+  url     = {https://github.com/hiows/MALDIassist-py},
+  doi     = {10.5281/zenodo.21396132}
 }
 ```
 
-Archived on Zenodo: [10.5281/zenodo.21307258](https://doi.org/10.5281/zenodo.21307258).
-To cite the software regardless of version, use the concept DOI
+Archived on Zenodo: [10.5281/zenodo.21396132](https://doi.org/10.5281/zenodo.21396132).
+
+The underlying R package **MALDIassist** can be cited separately (from R:
+`citation("MALDIassist")`). Its v1.0.0 archive is
+[10.5281/zenodo.21376279](https://doi.org/10.5281/zenodo.21376279); the R concept DOI is
 [10.5281/zenodo.21219451](https://doi.org/10.5281/zenodo.21219451).
 
 ## License
