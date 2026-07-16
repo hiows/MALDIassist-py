@@ -36,20 +36,14 @@ kernel-regression core) that accelerates peak detection. Pre-built **wheels**
 bundle this extension, so no compiler is needed:
 
 ```bash
-# once published to PyPI (recommended)
 pip install maldiassist
 pip install "maldiassist[viz]"   # with visualization (matplotlib)
 ```
 
-Until the PyPI release, install a pre-built wheel from the GitHub Releases page,
-e.g.:
-
-```bash
-pip install "maldiassist @ https://github.com/hiows/MALDIassist-py/releases/latest/download/<wheel-file>.whl"
-```
-
-Installing from source (git or sdist) instead requires a C++17 compiler and CMake
-(handled automatically by `scikit-build-core`):
+Alternatively, install a pre-built wheel from the
+[GitHub Releases](https://github.com/hiows/MALDIassist-py/releases) page, or
+build from source (requires a C++17 compiler and CMake, handled automatically
+by `scikit-build-core`):
 
 ```bash
 pip install "git+https://github.com/hiows/MALDIassist-py.git"

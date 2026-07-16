@@ -2,10 +2,10 @@ name: Build wheels
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     tags: ["v*"]
   pull_request:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -64,20 +64,20 @@ jobs:
           files: dist/*
           generate_release_notes: true
 
-  # Uncomment once the project is stabilised and a PyPI trusted publisher (or
-  # PYPI_API_TOKEN secret) is configured; publishes on version tags.
-  #
-  # publish_pypi:
-  #   name: Publish to PyPI
-  #   needs: [build_wheels, build_sdist]
-  #   runs-on: ubuntu-latest
-  #   if: startsWith(github.ref, 'refs/tags/v')
-  #   environment: pypi
-  #   permissions:
-  #     id-token: write  # OIDC trusted publishing
-  #   steps:
-  #     - uses: actions/download-artifact@v4
-  #       with:
-  #         path: dist
-  #         merge-multiple: true
-  #     - uses: pypa/gh-action-pypi-publish@release/v1
+  # Publish to PyPI via Trusted Publisher (OIDC). Requires a pending/active
+  # publisher on pypi.org for hiows/MALDIassist-py + wheels.yml + env "pypi".
+  publish_pypi:
+    name: Publish to PyPI
+    needs: [build_wheels, build_sdist]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: pypi
+    permissions:
+      id-token: write  # OIDC trusted publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
